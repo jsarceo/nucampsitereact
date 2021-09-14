@@ -1,10 +1,9 @@
 import React, { Component } from 'react';
-import {
-    Card, CardImg, CardText, CardBody, Breadcrumb, BreadcrumbItem, Button, Modal, ModalHeader, ModalBody,
-    Form, FormGroup, Input, Label, Row, Col
-} from 'reactstrap';
+import { Card, CardImg, CardText, CardBody, Breadcrumb, BreadcrumbItem, Button, Modal, ModalHeader, ModalBody, Label } from 'reactstrap';
+import { Link, } from 'react-router-dom';
 import { Control, LocalForm, Errors } from 'react-redux-form';
-import { Link, Switch, Route, Redirect, withRouter } from 'react-router-dom';
+import { Loading } from './LoadingComponent';
+
 
 const maxLength = len => val => !val || (val.length <= len);
 const minLength = len => val => val && (val.length >= len);
@@ -15,9 +14,10 @@ class CommentForm extends Component {
         super(props);
 
         this.state = {
-            isModalOpen: false
+            isModalOpen: false,
         };
         this.toggleModal = this.toggleModal.bind(this);
+        this.handleSubmit = this.handleSubmit.bind(this);
     }
 
     toggleModal() {
@@ -27,9 +27,8 @@ class CommentForm extends Component {
     }
 
     handleSubmit(values) {
-        console.log('Current state is: ' + JSON.stringify(values));
-        alert('Current state is: ' + JSON.stringify(values));
         this.toggleModal();
+        this.props.addComment(this.props.campsiteId, values.rating, values.author, values.text);
     }
 
     render() {
@@ -103,35 +102,57 @@ function RenderCampsite({campsite}) {
         );
     }
 
-    function RenderComments({ comments }) {
-        if (comments) {
-            return (
-                <>
-                    <div className="col-md-5 m-1" >
-                        <h4>Comments</h4>
-                        {comments.map(c => {
-                            return (
-                                <div key={c.id}>
-                                    <p>
-                                        {c.text}
-                                        <br />
-                                        <i>{c.author}</i> -- {new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: '2-digit' }).format(new Date(Date.parse(c.date)))}
+function RenderComments({comments, addComment, campsiteId}) {
+    if (comments) {
+        return (
+            <>
+                <div className="col-md-5 m-1" >
+                    <h4>Comments</h4>
+                    {comments.map(c => {
+                        return (
+                            <div key={c.id}>
+                                <p>
+                                    {c.text}
+                                    <br />
+                                    <i>{c.author}</i> -- {new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: '2-digit' }).format(new Date(Date.parse(c.date)))}
 
-                            </p>
-                                </div>
-                            );
-                        })
-    
-                        }
-                        <CommentForm />
-    
-                    </div>
-                </>);
-        }
-        return (<div></div>)
+                        </p>
+                            </div>
+                        );
+                    })
+
+                    }
+                    <CommentForm campsiteId={campsiteId} addComment={addComment} />
+
+                </div>
+            </>);
     }
+    return (<div></div>)
+}
 
 function CampsiteInfo(props) {
+    if (props.isLoading) {
+        return (
+            <div className="container">
+                <div className="row">
+                    <Loading />
+                </div>
+            </div>
+        );
+    }
+    if (props.errMess) {
+        return (
+            <div className="container">
+                <div className="row">
+                    <div className="col">
+                        <h4>{props.errMess}</h4>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+
     if(props.campsite) {
         return (
             <div className="container">
@@ -148,7 +169,11 @@ function CampsiteInfo(props) {
 
                 <div className="row">
                     <RenderCampsite campsite={props.campsite} />
-                    <RenderComments comments={props.comments} />
+                    <RenderComments 
+                        comments={props.comments}
+                        addComment={props.addComment}
+                        campsiteId={props.campsite.id}
+                    />
                 </div>
             </div>
         );
